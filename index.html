@@ -1,81 +1,45 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pi Test App</title>
-
-  <!-- Pi SDK -->
-  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-
-  <style>
-    body {
-      font-family: Arial;
-      text-align: center;
-      background: #f5f5f5;
-      padding: 40px;
-    }
-    .box {
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    .status {
-      margin: 20px 0;
-      font-size: 18px;
-      font-weight: bold;
-    }
-    .ok { color: green; }
-    .fail { color: red; }
-  </style>
-</head>
-
-<body>
-
-<div class="box">
-  <h2>اختبار Pi SDK</h2>
-
-  <div id="sdk" class="status">جارٍ الفحص...</div>
-  <div id="appid" class="status">APP_ID: ...</div>
-</div>
-
 <script>
-  function checkPi() {
+  async function checkPi() {
     const sdkEl = document.getElementById("sdk");
     const appEl = document.getElementById("appid");
 
-    if (window.Pi) {
-      sdkEl.innerHTML = "Pi SDK: موجود";
-      sdkEl.className = "status ok";
-
-      try {
-        Pi.init({ version: "2.0" });
-
-        const appId = window.Pi.app_id || "NOT_FOUND";
-        appEl.innerHTML = "APP_ID: " + appId;
-
-        if (appId === "NOT_FOUND") {
-          appEl.className = "status fail";
-        } else {
-          appEl.className = "status ok";
-        }
-
-      } catch (e) {
-        appEl.innerHTML = "خطأ في Pi.init";
-        appEl.className = "status fail";
-      }
-
-    } else {
+    // تحقق من وجود Pi
+    if (!window.Pi) {
       sdkEl.innerHTML = "Pi SDK: غير موجود (خارج Pi Browser)";
       sdkEl.className = "status fail";
       appEl.innerHTML = "APP_ID: NOT_FOUND";
+      appEl.className = "status fail";
+      return;
+    }
+
+    sdkEl.innerHTML = "Pi SDK: موجود";
+    sdkEl.className = "status ok";
+
+    try {
+      // تهيئة Pi بشكل صحيح (async)
+      await Pi.init({ version: "2.0" });
+
+      // محاولة الحصول على بيانات المستخدم (هذا هو الاختبار الحقيقي)
+      const scopes = ['username'];
+
+      const auth = await Pi.authenticate(scopes, function(payment) {
+        console.log("payment callback", payment);
+      });
+
+      if (auth && auth.user && auth.user.username) {
+        appEl.innerHTML = "APP CONNECTED: " + auth.user.username;
+        appEl.className = "status ok";
+      } else {
+        appEl.innerHTML = "APP_ID: NOT_FOUND";
+        appEl.className = "status fail";
+      }
+
+    } catch (e) {
+      console.log(e);
+      appEl.innerHTML = "فشل الاتصال بـ Pi";
       appEl.className = "status fail";
     }
   }
 
   setTimeout(checkPi, 1000);
 </script>
-
-</body>
-</html>
