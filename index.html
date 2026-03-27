@@ -97,9 +97,12 @@ button {
 </div>
 
 <script>
+const API = "https://eagleeye-api.adrar520.workers.dev";
+
 let pi = null;
 let userName = null;
 
+// انتظار تحميل Pi SDK
 function waitForPi(){
     if(window.Pi){
         initPi();
@@ -108,6 +111,7 @@ function waitForPi(){
     }
 }
 
+// تهيئة Pi
 async function initPi(){
     pi = window.Pi;
 
@@ -117,55 +121,3 @@ async function initPi(){
     });
 
     try {
-        const auth = await pi.authenticate(['username'], function(){});
-
-        userName = auth.user.username;
-
-        document.getElementById("user").innerText =
-            "👤 " + userName;
-
-    } catch(e){
-        document.getElementById("user").innerText =
-            "افتح التطبيق داخل Pi Browser";
-    }
-
-    loadMarket();
-    loadPrice();
-}
-
-function vote(action){
-    document.getElementById("vote-status").innerText =
-        "تم تسجيل القرار: " + action;
-
-    // لاحقاً:
-    // إرسال للـ backend
-    // حساب score
-}
-
-async function loadMarket(){
-    document.getElementById("market").innerText =
-        "BUY 58% | SELL 42%";
-}
-
-async function loadPrice(){
-    try {
-        const res = await fetch(
-            "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd"
-        );
-
-        const data = await res.json();
-
-        document.getElementById("price").innerText =
-            "BTC: $" + data.bitcoin.usd;
-
-    } catch {
-        document.getElementById("price").innerText =
-            "فشل تحميل البيانات";
-    }
-}
-
-waitForPi();
-</script>
-
-</body>
-</html>
