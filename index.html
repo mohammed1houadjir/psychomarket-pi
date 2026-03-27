@@ -1,45 +1,171 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>EagleEye Protocol</title>
+
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+
+<style>
+body {
+    font-family: Arial;
+    background: #020617;
+    color: #e2e8f0;
+    text-align: center;
+    padding: 20px;
+}
+
+.container {
+    max-width: 520px;
+    margin: auto;
+}
+
+.title {
+    font-size: 22px;
+    margin-bottom: 10px;
+}
+
+.subtitle {
+    font-size: 12px;
+    color: #64748b;
+}
+
+.card {
+    background: #0f172a;
+    padding: 20px;
+    margin: 15px 0;
+    border-radius: 12px;
+}
+
+button {
+    padding: 12px;
+    margin: 5px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    color: white;
+}
+
+.buy { background: #16a34a; }
+.sell { background: #dc2626; }
+.wait { background: #eab308; color:black; }
+
+.status {
+    margin-top: 10px;
+    font-size: 14px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="title">🦅 EagleEye Protocol</div>
+<div class="subtitle">AI + Web3 Market Intelligence Engine</div>
+
+<div class="card">
+    <div id="user">جارٍ الاتصال...</div>
+</div>
+
+<div class="card">
+    <h3>📊 Market Intelligence</h3>
+    <div id="market">تحميل...</div>
+</div>
+
+<div class="card">
+    <h3>⚡ Decision Engine</h3>
+    <button class="buy" onclick="vote('buy')">BUY</button>
+    <button class="sell" onclick="vote('sell')">SELL</button>
+    <button class="wait" onclick="vote('wait')">WAIT</button>
+
+    <div id="vote-status" class="status"></div>
+</div>
+
+<div class="card">
+    <h3>💹 Live Data Feed</h3>
+    <div id="price">...</div>
+</div>
+
+<div class="card">
+    <h3>🧠 AI Layer (Placeholder)</h3>
+    <div>سيتم تفعيل التحليل الذكي لاحقاً</div>
+</div>
+
+</div>
+
 <script>
-  async function checkPi() {
-    const sdkEl = document.getElementById("sdk");
-    const appEl = document.getElementById("appid");
+let pi = null;
+let userName = null;
 
-    // تحقق من وجود Pi
-    if (!window.Pi) {
-      sdkEl.innerHTML = "Pi SDK: غير موجود (خارج Pi Browser)";
-      sdkEl.className = "status fail";
-      appEl.innerHTML = "APP_ID: NOT_FOUND";
-      appEl.className = "status fail";
-      return;
+function waitForPi(){
+    if(window.Pi){
+        initPi();
+    } else {
+        setTimeout(waitForPi, 100);
     }
+}
 
-    sdkEl.innerHTML = "Pi SDK: موجود";
-    sdkEl.className = "status ok";
+async function initPi(){
+    pi = window.Pi;
+
+    pi.init({
+        version: "2.0",
+        sandbox: true
+    });
 
     try {
-      // تهيئة Pi بشكل صحيح (async)
-      await Pi.init({ version: "2.0" });
+        const auth = await pi.authenticate(['username'], function(){});
 
-      // محاولة الحصول على بيانات المستخدم (هذا هو الاختبار الحقيقي)
-      const scopes = ['username'];
+        userName = auth.user.username;
 
-      const auth = await Pi.authenticate(scopes, function(payment) {
-        console.log("payment callback", payment);
-      });
+        document.getElementById("user").innerText =
+            "👤 " + userName;
 
-      if (auth && auth.user && auth.user.username) {
-        appEl.innerHTML = "APP CONNECTED: " + auth.user.username;
-        appEl.className = "status ok";
-      } else {
-        appEl.innerHTML = "APP_ID: NOT_FOUND";
-        appEl.className = "status fail";
-      }
-
-    } catch (e) {
-      console.log(e);
-      appEl.innerHTML = "فشل الاتصال بـ Pi";
-      appEl.className = "status fail";
+    } catch(e){
+        document.getElementById("user").innerText =
+            "افتح التطبيق داخل Pi Browser";
     }
-  }
 
-  setTimeout(checkPi, 1000);
+    loadMarket();
+    loadPrice();
+}
+
+function vote(action){
+    document.getElementById("vote-status").innerText =
+        "تم تسجيل القرار: " + action;
+
+    // لاحقاً:
+    // إرسال للـ backend
+    // حساب score
+}
+
+async function loadMarket(){
+    document.getElementById("market").innerText =
+        "BUY 58% | SELL 42%";
+}
+
+async function loadPrice(){
+    try {
+        const res = await fetch(
+            "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd"
+        );
+
+        const data = await res.json();
+
+        document.getElementById("price").innerText =
+            "BTC: $" + data.bitcoin.usd;
+
+    } catch {
+        document.getElementById("price").innerText =
+            "فشل تحميل البيانات";
+    }
+}
+
+waitForPi();
 </script>
+
+</body>
+</html>
