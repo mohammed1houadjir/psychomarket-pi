@@ -99,7 +99,6 @@ button {
 <script>
 const API = "https://eagleeye-api.adrar520.workers.dev";
 
-let pi = null;
 let userName = null;
 
 // انتظار تحميل Pi SDK
@@ -111,13 +110,99 @@ function waitForPi(){
     }
 }
 
-// تهيئة Pi
+// التهيئة الصحيحة (بدون sandbox)
 async function initPi(){
-    pi = window.Pi;
+    try {
+        await window.Pi.init({ version: "2.0" });
 
-    pi.init({
-        version: "2.0",
-        sandbox: true
-    });
+        const auth = await window.Pi.authenticate(['username'], function(){});
+
+        userName = auth.user.username;
+
+        document.getElementById("user").innerText =
+            "👤 " + userName;
+
+    } catch(e){
+        console.log(e);
+        document.getElementById("user").innerText =
+            "❌ فشل الاتصال بـ Pi";
+    }
+
+    loadMarket();
+    loadPrice();
+}
+
+// إرسال التصويت
+async function vote(action){
+
+    if(!userName){
+        document.getElementById("vote-status").innerText =
+            "يجب تسجيل الدخول عبر Pi";
+        return;
+    }
+
+    document.getElementById("vote-status").innerText =
+        "جارٍ إرسال القرار...";
 
     try {
+        await fetch(API + "/vote", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                user: userName,
+                action: action
+            })
+        });
+
+        document.getElementById("vote-status").innerText =
+            "✔ تم تسجيل: " + action;
+
+        loadMarket();
+
+    } catch(e){
+        document.getElementById("vote-status").innerText =
+            "❌ خطأ في الإرسال";
+    }
+}
+
+// جلب السوق
+async function loadMarket(){
+    try {
+        const res = await fetch(API + "/market");
+        const data = await res.json();
+
+        document.getElementById("market").innerText =
+            "BUY " + data.buy + "% | SELL " + data.sell + "% | WAIT " + data.wait + "%";
+
+    } catch {
+        document.getElementById("market").innerText =
+            "فشل تحميل السوق";
+    }
+}
+
+// سعر BTC
+async function loadPrice(){
+    try {
+        const res = await fetch(
+            "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd"
+        );
+
+        const data = await res.json();
+
+        document.getElementById("price").innerText =
+            "BTC: $" + data.bitcoin.usd;
+
+    } catch {
+        document.getElementById("price").innerText =
+            "فشل تحميل البيانات";
+    }
+}
+
+// تحديث مستمر
+setInterval(loadMarket, 3000);
+
+waitForPi();
+</script>
+
+</body>
+</html>
