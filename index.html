@@ -100,6 +100,7 @@ button {
 const API = "https://eagleeye-api.adrar520.workers.dev";
 
 let userName = null;
+let votingLock = false;
 
 // انتظار تحميل Pi SDK
 function waitForPi(){
@@ -110,10 +111,13 @@ function waitForPi(){
     }
 }
 
-// التهيئة الصحيحة (بدون sandbox)
+// تهيئة Pi
 async function initPi(){
     try {
-        await window.Pi.init({ version: "2.0" });
+        await window.Pi.init({
+            version: "2.0",
+            sandbox: false
+        });
 
         const auth = await window.Pi.authenticate(['username'], function(){});
 
@@ -125,7 +129,7 @@ async function initPi(){
     } catch(e){
         console.log(e);
         document.getElementById("user").innerText =
-            "❌ فشل الاتصال بـ Pi";
+            "❌ افتح التطبيق داخل Pi Browser";
     }
 
     loadMarket();
@@ -140,6 +144,9 @@ async function vote(action){
             "يجب تسجيل الدخول عبر Pi";
         return;
     }
+
+    if(votingLock) return;
+    votingLock = true;
 
     document.getElementById("vote-status").innerText =
         "جارٍ إرسال القرار...";
@@ -157,12 +164,14 @@ async function vote(action){
         document.getElementById("vote-status").innerText =
             "✔ تم تسجيل: " + action;
 
-        loadMarket();
+        await loadMarket();
 
     } catch(e){
         document.getElementById("vote-status").innerText =
-            "❌ خطأ في الإرسال";
+            "❌ خطأ في الاتصال";
     }
+
+    setTimeout(() => votingLock = false, 1000);
 }
 
 // جلب السوق
@@ -198,8 +207,9 @@ async function loadPrice(){
     }
 }
 
-// تحديث مستمر
-setInterval(loadMarket, 3000);
+// تحديث تلقائي
+setInterval(loadMarket, 5000);
+setInterval(loadPrice, 10000);
 
 waitForPi();
 </script>
